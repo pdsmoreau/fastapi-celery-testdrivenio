@@ -1,9 +1,11 @@
 from fastapi import FastAPI
+from project.celery_utils import create_celery
 
 
 def create_app() -> FastAPI:
     app = FastAPI()
 
+    app.celery_app = create_celery()
     from project.users import users_router  # new
 
     app.include_router(users_router)  # new
