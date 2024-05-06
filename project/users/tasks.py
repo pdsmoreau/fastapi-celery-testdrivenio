@@ -1,5 +1,5 @@
 import random
-
+import celery
 import requests
 from asgiref.sync import async_to_sync
 from celery import shared_task
@@ -26,18 +26,44 @@ def sample_task(email):
     api_call(email)
 
 
-@shared_task(bind=True)
+# @shared_task(bind=True)
+# def task_process_notification(self):
+#     try:
+#         if not random.choice([0, 1]):
+#             # mimic random error
+
+#             raise Exception()
+#         requests.post("http://httpbin.org/delay/5")
+
+#     except Exception as e:
+#         logger.error("exception raised, it would be retry after 5 seconds")
+#         raise self.retry(exc=e, countdown=5)
+
+
+# @shared_task(
+#     bind=True,
+#     autoretry_for=(Exception,),
+#     retry_kwargs={"max_retries": 7, "countdown": 5},
+# )
+# def task_process_notification(self):
+#     if not random.choice([0, 1]):
+#         # mimic random error
+#         raise Exception()
+
+#     requests.post("https://httpbin.org/delay/5")
+
+
+class BaseTaskWithRetry(
+    celery.Task
+):  # configure celery params in a base class to avoid repeat retry config
+    autoretry_for = (Exception, KeyError)
+    retry_kwargs = {"max_retries": 5}
+    retry_backoff = True
+
+
+@shared_task(bind=True, base=BaseTaskWithRetry)
 def task_process_notification(self):
-    try:
-        if not random.choice([0, 1]):
-            # mimic random error
-
-            raise Exception()
-        requests.post("http://httpbin.org/delay/5")
-
-    except Exception as e:
-        logger.error("exception raised, it would be retry after 5 seconds")
-        raise self.retry(exc=e, countdown=5)
+    raise Exception()
 
 
 @task_postrun.connect
@@ -54,3 +80,21 @@ def task_postrun_handler(task_id, **kwargs):
 @shared_task(name="task_schedule_work")
 def task_schedule_work():
     logger.info("task_schedule_work run")
+
+
+# <QUEUE>:<TASK_NAME>
+
+
+@shared_task(name="default:dynamic_example_one")
+def dynamic_example_one():
+    logger.info("Example One")
+
+
+@shared_task(name="low_priority:dynamic_example_two")
+def dynamic_example_two():
+    logger.info("Example Two")
+
+
+@shared_task(name="high_priority:dynamic_example_three")
+def dynamic_example_three():
+    logger.info("Example Three")
