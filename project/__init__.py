@@ -4,8 +4,6 @@ from fastapi import FastAPI
 
 from project.config import settings
 
-from project.celery_utils import create_celery  # new
-
 broadcast = Broadcast(settings.WS_MESSAGE_QUEUE)
 
 
@@ -19,15 +17,22 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
 
-    app.celery_app = create_celery()  # new
+    # do this before loading routes
+    from project.celery_utils import create_celery
+
+    app.celery_app = create_celery()
 
     from project.users import users_router
 
     app.include_router(users_router)
 
-    from project.ws import ws_router  # new
+    from project.ws import ws_router
 
-    app.include_router(ws_router)  # new
+    app.include_router(ws_router)
+
+    from project.ws.views import register_socketio_app  # new
+
+    register_socketio_app(app)  # new
 
     @app.get("/")
     async def root():
