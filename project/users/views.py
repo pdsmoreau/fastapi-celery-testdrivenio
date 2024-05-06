@@ -67,3 +67,8 @@ def webhook_test_async():
     task = task_process_notification.delay()
     print(task.id)
     return "pong"
+
+
+@users_router.get("/form_ws")
+def form_ws_example(request: Request):
+    return templates.TemplateResponse("form_ws.html", {"request": request})
