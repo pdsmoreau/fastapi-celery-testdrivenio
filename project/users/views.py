@@ -99,6 +99,6 @@ def transaction_celery(session: Session = Depends(get_db_session)):
     with session.begin():
         session.add(user)
 
-    print(f"user {user.id} {user.username} is persistent now")
+    logger.info(f"user {user.id} {user.username} is persistent now")
     task_send_welcome_email.delay(user.id)
     return {"message": "done"}
